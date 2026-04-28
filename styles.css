@@ -324,6 +324,75 @@ main {
   padding: 2px 8px;
 }
 
+/* ===== Stat bars =====
+   Reused on the in-game reveal panel and inside the Pokédex detail modal. */
+.stat-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: 70px 1fr 40px;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.stat-label {
+  color: var(--text-muted);
+}
+
+.stat-bar-track {
+  background: var(--bg-surface-2);
+  border-radius: 4px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.stat-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  /* Animate width changes so opening the modal feels alive. */
+  transition: width 300ms ease;
+}
+
+.stat-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== Detail modal contents ===== */
+.detail-sprite {
+  display: block;
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+  margin: 0 auto 12px;
+}
+
+.detail-header {
+  margin: 0 0 8px;
+  text-align: center;
+  text-transform: capitalize;
+  font-size: 1.4rem;
+}
+
+.detail-types {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.detail-generation {
+  text-align: center;
+  color: var(--text-muted);
+  margin: 0 0 16px;
+  font-size: 0.9rem;
+}
+
 /* ===== Detail modal ===== */
 .detail-modal {
   position: fixed;

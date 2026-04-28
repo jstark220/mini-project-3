@@ -83,6 +83,10 @@ const retryButton = document.getElementById("retry-button");
 const revealPanel = document.getElementById("reveal-panel");
 const revealName = document.getElementById("reveal-name");
 const revealTypes = document.getElementById("reveal-types");
+const revealStats = document.getElementById("reveal-stats");
+const detailModal = document.getElementById("detail-modal");
+const detailBody = document.getElementById("detail-body");
+const detailCloseButton = document.getElementById("detail-close");
 const guessForm = document.getElementById("guess-form");
 const guessInput = document.getElementById("guess-input");
 const resultMessage = document.getElementById("result-message");
@@ -219,6 +223,122 @@ function renderPokedex() {
 typeFilter.addEventListener("change", renderPokedex);
 nameSearch.addEventListener("input", renderPokedex);
 
+// ===== Detail modal =====
+
+// Roman numerals for displaying generation info ("Generation IV"). Anything
+// past Gen IX falls back to the arabic number, so we won't break if PokéAPI
+// ships a Gen X tomorrow.
+const ROMAN_NUMERALS = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"];
+function generationToRoman(n) {
+  return ROMAN_NUMERALS[n - 1] || String(n);
+}
+
+// Lazily fetch generation info for a caught Pokémon. Cached on the entry so
+// subsequent modal opens don't refetch. Returns null on network failure —
+// callers should render gracefully without it.
+async function ensureGeneration(pokemon) {
+  if (pokemon.generation) return pokemon.generation;
+  try {
+    const response = await fetch(`${POKEMON_API_BASE}/pokemon-species/${pokemon.id}`);
+    if (!response.ok) throw new Error(`Status ${response.status}`);
+    const data = await response.json();
+    // The species endpoint returns generation as { name: "generation-i", url: ".../generation/1/" }.
+    // Parsing the trailing number from the URL is more reliable than the name slug.
+    const match = data.generation.url.match(/\/generation\/(\d+)\//);
+    if (match) {
+      pokemon.generation = parseInt(match[1], 10);
+      savePersistedState(); // persist the cached value so it survives a reload
+    }
+    return pokemon.generation;
+  } catch (error) {
+    console.warn("Could not fetch generation:", error);
+    return null;
+  }
+}
+
+// Render the modal contents for a caught Pokémon and reveal the modal.
+async function openDetailModal(pokemon) {
+  detailBody.innerHTML = "";
+
+  // Larger sprite at the top.
+  const sprite = document.createElement("img");
+  sprite.className = "detail-sprite";
+  sprite.src = pokemon.sprite;
+  sprite.alt = pokemon.name;
+  detailBody.appendChild(sprite);
+
+  // Header: name + zero-padded Pokédex number ("Pikachu #025").
+  const header = document.createElement("h2");
+  header.className = "detail-header";
+  header.textContent = `${pokemon.name} #${String(pokemon.id).padStart(3, "0")}`;
+  detailBody.appendChild(header);
+
+  // Type badges centered.
+  const types = document.createElement("div");
+  types.className = "detail-types";
+  for (const type of pokemon.types) {
+    const badge = document.createElement("span");
+    badge.className = `type-badge type-${type}`;
+    badge.textContent = type;
+    types.appendChild(badge);
+  }
+  detailBody.appendChild(types);
+
+  // Generation line. Renders a placeholder while fetching, updates in place.
+  const genLine = document.createElement("p");
+  genLine.className = "detail-generation";
+  genLine.textContent = pokemon.generation
+    ? `Generation ${generationToRoman(pokemon.generation)}`
+    : "Generation …";
+  detailBody.appendChild(genLine);
+
+  // Stat bars below.
+  detailBody.appendChild(buildStatBars(pokemon.stats));
+
+  detailModal.hidden = false;
+
+  // If we don't already have the generation, fetch it and patch the line.
+  if (!pokemon.generation) {
+    const gen = await ensureGeneration(pokemon);
+    // Only update the DOM if the modal is still showing this Pokémon
+    // (the user could have closed and opened a different card mid-fetch).
+    if (!detailModal.hidden && genLine.isConnected) {
+      genLine.textContent = gen
+        ? `Generation ${generationToRoman(gen)}`
+        : "Generation unknown";
+    }
+  }
+}
+
+function closeDetailModal() {
+  detailModal.hidden = true;
+}
+
+// Event delegation: one listener on the grid handles clicks on any card,
+// even cards added after this listener was attached. closest() walks up from
+// whatever was clicked (sprite, name, badge) to find the card itself.
+pokedexGrid.addEventListener("click", (event) => {
+  const card = event.target.closest(".pokedex-card");
+  if (!card) return; // clicked on an empty area
+  const id = parseInt(card.dataset.pokemonId, 10);
+  const pokemon = persistedState.caughtPokemon.find((p) => p.id === id);
+  if (pokemon) openDetailModal(pokemon);
+});
+
+// Close button.
+detailCloseButton.addEventListener("click", closeDetailModal);
+
+// Click the dimmed backdrop (but not the modal content) to dismiss.
+detailModal.addEventListener("click", (event) => {
+  if (event.target === detailModal) closeDetailModal();
+});
+
+// Escape key dismisses, but only when the modal is actually open — otherwise
+// pressing Escape while typing in the guess input would do nothing useful.
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !detailModal.hidden) closeDetailModal();
+});
+
 // ===== Name normalization =====
 // Strip everything except letters and digits, then lowercase. This makes
 // "Mr. Mime", "mr-mime", and "MR MIME" all match the API slug "mr-mime"
@@ -302,6 +422,62 @@ function addToCaught(pokemon) {
   });
 }
 
+// ===== Stat bars =====
+// Display order + display labels for the six base stats. The keys match the
+// camelCase names produced by extractStats() (and stored in localStorage).
+const STAT_DISPLAY = [
+  ["hp", "HP"],
+  ["attack", "Attack"],
+  ["defense", "Defense"],
+  ["spAtk", "Sp. Atk"],
+  ["spDef", "Sp. Def"],
+  ["speed", "Speed"],
+];
+// Visual ceiling for the bar fill. Real base stats top out at 255 (Blissey HP),
+// but most fall under 200 — using 200 as the scale gives the bars more visual
+// punch without making typical stats look tiny.
+const STAT_BAR_MAX = 200;
+
+// Build a stack of colored stat bars from a stats object. Reused by both the
+// in-game reveal panel and the Pokédex detail modal.
+function buildStatBars(stats) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "stat-bars";
+
+  for (const [key, label] of STAT_DISPLAY) {
+    const value = stats[key] ?? 0;
+
+    const row = document.createElement("div");
+    row.className = "stat-row";
+
+    const labelEl = document.createElement("span");
+    labelEl.className = "stat-label";
+    labelEl.textContent = label;
+
+    // Track is the gray background; fill is the colored portion sized by value.
+    const track = document.createElement("div");
+    track.className = "stat-bar-track";
+    const fill = document.createElement("div");
+    fill.className = "stat-bar-fill";
+    fill.style.width = `${Math.min(100, (value / STAT_BAR_MAX) * 100)}%`;
+    // Hue 0 = red, hue 120 = green. Multiplying by 0.7 means stat ~170 maxes
+    // out the green; lower stats trend orange/red.
+    const hue = Math.min(120, value * 0.7);
+    fill.style.background = `hsl(${hue}, 70%, 45%)`;
+    track.appendChild(fill);
+
+    const valueEl = document.createElement("span");
+    valueEl.className = "stat-value";
+    valueEl.textContent = value;
+
+    row.appendChild(labelEl);
+    row.appendChild(track);
+    row.appendChild(valueEl);
+    wrapper.appendChild(row);
+  }
+  return wrapper;
+}
+
 // ===== Rendering =====
 // Set up a fresh round: load the new sprite as a silhouette, hide the reveal
 // panel, clear the input + result message, and re-enable buttons that get
@@ -349,6 +525,12 @@ function revealAnswer() {
     badge.textContent = slot.type.name;
     revealTypes.appendChild(badge);
   }
+
+  // Stat bars on the reveal panel. extractStats turns the API's array shape
+  // into the {hp, attack, ...} object that buildStatBars expects.
+  revealStats.innerHTML = "";
+  revealStats.appendChild(buildStatBars(extractStats(currentPokemon)));
+
   revealPanel.hidden = false;
 
   // Lock the round so the user can't keep guessing or hinting after reveal.
