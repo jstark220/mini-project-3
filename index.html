@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!-- Responsive viewport so mobile browsers don't render at desktop width -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Who's That Pokémon?</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- defer = run script.js after the HTML is parsed, so DOM lookups don't fail -->
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <!-- Top header is shared across both views. The view toggle swaps which view below is visible. -->
+  <header class="app-header">
+    <h1 class="app-title">Who's That Pokémon?</h1>
+    <nav class="view-toggle" aria-label="View toggle">
+      <button id="tab-game" class="tab-button is-active" type="button">Game</button>
+      <button id="tab-pokedex" class="tab-button" type="button">Pokédex</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ===== GAME VIEW ===== -->
+    <!-- Default view on load. Hidden by adding the .is-hidden class. -->
+    <section id="view-game" class="view view-game">
+      <!-- Score / streak / best-streak / total caught.
+           These spans get filled in by JS once state is loaded from localStorage. -->
+      <div class="score-bar">
+        <span class="score-item">Score: <strong id="score-value">0</strong></span>
+        <span class="score-item">Streak: <strong id="streak-value">0</strong></span>
+        <span class="score-item">Best: <strong id="best-streak-value">0</strong></span>
+        <span class="score-item">Caught: <strong id="caught-count">0</strong></span>
+      </div>
+
+      <!-- Difficulty toggle: Gen 1 (151) or All Gens (1025). Phase 1 hard-codes Gen 1. -->
+      <div class="difficulty-toggle">
+        <label>
+          <input type="radio" name="difficulty" value="gen1" checked />
+          Gen 1 (151)
+        </label>
+        <label>
+          <input type="radio" name="difficulty" value="all" />
+          All Gens (1025)
+        </label>
+      </div>
+
+      <!-- Silhouette display area. The image is hidden behind a CSS filter until correct guess. -->
+      <div class="silhouette-stage">
+        <!-- Loading spinner shown while fetching. Hidden by default; JS toggles .is-visible. -->
+        <div id="loading-indicator" class="loading-indicator" aria-live="polite">Loading…</div>
+        <!-- Error state: friendly message + retry. Hidden by default. -->
+        <div id="error-indicator" class="error-indicator" role="alert" hidden>
+          <p>Couldn't reach PokéAPI. Check your connection.</p>
+          <button id="retry-button" type="button">Retry</button>
+        </div>
+        <!-- The Pokémon sprite. Starts hidden + silhouetted; revealed on correct guess or skip. -->
+        <img id="pokemon-sprite" class="pokemon-sprite is-silhouette" alt="Mystery Pokémon" hidden />
+      </div>
+
+      <!-- Reveal panel: shows the name, types, and stats once guessed correctly. Hidden until reveal. -->
+      <div id="reveal-panel" class="reveal-panel" hidden>
+        <h2 id="reveal-name" class="reveal-name"></h2>
+        <div id="reveal-types" class="reveal-types"></div>
+        <div id="reveal-stats" class="reveal-stats"></div>
+      </div>
+
+      <!-- Guess input. Submitting either via Enter or button click triggers the same handler. -->
+      <form id="guess-form" class="guess-form" autocomplete="off">
+        <input
+          id="guess-input"
+          class="guess-input"
+          type="text"
+          placeholder="Who's that Pokémon?"
+          aria-label="Your guess"
+        />
+        <button type="submit" class="primary-button">Guess</button>
+      </form>
+
+      <!-- Action row: hint, skip, next. "Next" only appears after a correct guess. -->
+      <div class="action-row">
+        <button id="hint-button" type="button">Hint (-1 pt)</button>
+        <button id="skip-button" type="button">Skip</button>
+        <button id="next-button" type="button" hidden>Next →</button>
+      </div>
+
+      <!-- Result message: "Correct!", "Wrong, try again", etc. Updated by JS. -->
+      <p id="result-message" class="result-message" aria-live="polite"></p>
+    </section>
+
+    <!-- ===== POKÉDEX VIEW ===== -->
+    <!-- Hidden on load. Shown when user clicks the Pokédex tab. -->
+    <section id="view-pokedex" class="view view-pokedex is-hidden">
+      <!-- Filter bar: type dropdown + name search. JS wires these to filter the grid. -->
+      <div class="filter-bar">
+        <select id="type-filter" aria-label="Filter by type">
+          <option value="all">All types</option>
+          <!-- Type options injected by JS so we don't hand-maintain the list of 18 types. -->
+        </select>
+        <input
+          id="name-search"
+          type="search"
+          placeholder="Search by name"
+          aria-label="Search caught Pokémon by name"
+        />
+      </div>
+
+      <!-- Grid of caught Pokémon cards. Cards rendered by JS from localStorage data. -->
+      <div id="pokedex-grid" class="pokedex-grid"></div>
+
+      <!-- Empty state shown when no Pokémon have been caught yet. JS toggles visibility. -->
+      <p id="pokedex-empty" class="pokedex-empty">No Pokémon caught yet — go play!</p>
+    </section>
+
+    <!-- ===== DETAIL MODAL ===== -->
+    <!-- Reused by Pokédex view to show a single Pokémon's full details. Hidden by default. -->
+    <div id="detail-modal" class="detail-modal" hidden>
+      <div class="detail-modal-content">
+        <button id="detail-close" class="detail-close" type="button" aria-label="Close">×</button>
+        <div id="detail-body"></div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

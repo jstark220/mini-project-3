@@ -1,0 +1,395 @@
+/* ===== Dark theme tokens =====
+   CSS custom properties make it easy to tweak the palette in one place.
+   These are read by every rule below via var(--name). */
+:root {
+  --bg-page: #0f1419;          /* page background */
+  --bg-surface: #1a2027;       /* cards, modals, raised surfaces */
+  --bg-surface-2: #232b35;     /* hover/active states */
+  --border: #2d3744;           /* subtle dividers */
+  --text-primary: #e8edf3;     /* main text */
+  --text-muted: #94a3b8;       /* secondary text */
+  --accent: #fbbf24;           /* Pokémon-yellow accent for buttons + highlights */
+  --accent-hover: #f59e0b;
+  --danger: #ef4444;           /* error states */
+  --success: #22c55e;          /* correct-guess feedback */
+  --radius: 8px;
+  --gap: 16px;
+}
+
+/* ===== Reset / base ===== */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* ===== Utility ===== */
+/* Toggled by JS to hide a view without removing it from the DOM. */
+.is-hidden {
+  display: none !important;
+}
+
+/* The HTML `hidden` attribute should always win, even when a class on the same
+   element sets `display: flex` or similar. Without !important, class rules
+   like `.detail-modal { display: flex }` would override it. */
+[hidden] {
+  display: none !important;
+}
+
+/* ===== Header ===== */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--gap);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+
+.app-title {
+  margin: 0;
+  font-size: 1.25rem;
+  letter-spacing: 0.02em;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 4px;
+}
+
+.tab-button {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  transition: background 120ms, color 120ms;
+}
+
+.tab-button.is-active {
+  background: var(--accent);
+  color: #111;
+  border-color: var(--accent);
+}
+
+/* ===== Main + views ===== */
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--gap);
+}
+
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+/* ===== Score bar ===== */
+.score-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-size: 0.95rem;
+}
+
+.score-item strong {
+  color: var(--accent);
+  margin-left: 4px;
+}
+
+/* ===== Difficulty toggle ===== */
+.difficulty-toggle {
+  display: flex;
+  gap: 16px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* ===== Silhouette stage ===== */
+.silhouette-stage {
+  position: relative;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pokemon-sprite {
+  max-width: 240px;
+  max-height: 240px;
+  width: auto;
+  height: auto;
+  /* Smooth reveal when JS removes .is-silhouette */
+  transition: filter 600ms ease;
+}
+
+/* The class that creates the "Who's That Pokémon?" silhouette. */
+.pokemon-sprite.is-silhouette {
+  filter: brightness(0);
+}
+
+.loading-indicator {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.error-indicator {
+  text-align: center;
+  color: var(--danger);
+}
+
+/* ===== Reveal panel ===== */
+.reveal-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+
+.reveal-name {
+  margin: 0 0 8px;
+  text-transform: capitalize;
+}
+
+.reveal-types {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.reveal-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ===== Guess form ===== */
+.guess-form {
+  display: flex;
+  gap: 8px;
+}
+
+.guess-input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.guess-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.primary-button {
+  background: var(--accent);
+  color: #111;
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px 18px;
+  font-weight: 600;
+  transition: background 120ms;
+}
+
+.primary-button:hover {
+  background: var(--accent-hover);
+}
+
+/* ===== Action row ===== */
+.action-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.action-row button {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+}
+
+.action-row button:hover {
+  background: var(--bg-surface-2);
+}
+
+/* ===== Result message ===== */
+.result-message {
+  min-height: 1.4em;
+  margin: 0;
+  font-weight: 600;
+}
+
+.result-message.is-correct { color: var(--success); }
+.result-message.is-wrong { color: var(--danger); }
+
+/* ===== Pokédex view ===== */
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-bar select,
+.filter-bar input {
+  padding: 8px 10px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font: inherit;
+}
+
+.pokedex-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.pokedex-empty {
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 32px;
+}
+
+/* ===== Pokédex card =====
+   One per caught Pokémon. cursor:pointer hints at the click-to-open-detail
+   behavior that lands in Phase 2d. */
+.pokedex-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: background 120ms, transform 120ms;
+}
+
+.pokedex-card:hover {
+  background: var(--bg-surface-2);
+  transform: translateY(-2px);
+}
+
+.pokedex-card-sprite {
+  width: 100%;
+  max-width: 96px;
+  height: 96px;
+  object-fit: contain;
+}
+
+.pokedex-card-name {
+  margin: 0;
+  font-size: 0.95rem;
+  text-transform: capitalize;
+}
+
+.pokedex-card-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+}
+
+/* Smaller badges inside the cards so they don't dominate the layout. */
+.pokedex-card-types .type-badge {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+}
+
+/* ===== Detail modal ===== */
+.detail-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gap);
+  z-index: 50;
+}
+
+.detail-modal-content {
+  position: relative;
+  background: var(--bg-surface);
+  border-radius: var(--radius);
+  padding: 24px;
+  max-width: 480px;
+  width: 100%;
+}
+
+.detail-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+}
+
+/* ===== Type badges =====
+   Canonical Pokémon type colors. Pale types (electric, ice, ground, flying,
+   steel) use dark text for readable contrast. */
+.type-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+.type-normal   { background: #A8A77A; }
+.type-fire     { background: #EE8130; }
+.type-water    { background: #6390F0; }
+.type-electric { background: #E2C42C; color: #1a1a1a; }
+.type-grass    { background: #7AC74C; }
+.type-ice      { background: #96D9D6; color: #1a1a1a; }
+.type-fighting { background: #C22E28; }
+.type-poison   { background: #A33EA1; }
+.type-ground   { background: #E2BF65; color: #1a1a1a; }
+.type-flying   { background: #A98FF3; color: #1a1a1a; }
+.type-psychic  { background: #F95587; }
+.type-bug      { background: #A6B91A; }
+.type-rock     { background: #B6A136; }
+.type-ghost    { background: #735797; }
+.type-dragon   { background: #6F35FC; }
+.type-dark     { background: #4F3F2D; }
+.type-steel    { background: #B7B7CE; color: #1a1a1a; }
+.type-fairy    { background: #D685AD; }
+
+/* ===== Mobile breakpoint ===== */
+@media (max-width: 480px) {
+  .app-title { font-size: 1.05rem; }
+  .silhouette-stage { min-height: 220px; }
+  .pokemon-sprite { max-width: 180px; max-height: 180px; }
+}
