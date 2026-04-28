@@ -4,7 +4,7 @@ A browser-based Pokémon guessing game with a personal Pokédex that grows as yo
 
 ## Live Link
 
-
+https://jstark220.github.io/mini-project-3/ 
 
 ## API
 
