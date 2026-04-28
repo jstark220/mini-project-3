@@ -12,9 +12,11 @@
 // Base URL for every PokéAPI request. Centralized here so a future change
 // (e.g., a different version) only needs one edit.
 const POKEMON_API_BASE = "https://pokeapi.co/api/v2";
-// Highest valid Pokémon ID in Generation 1. We hard-code Gen 1 in Phase 1; the
-// difficulty toggle that picks between Gen 1 and all 1025 lands in Phase 3.
+// Highest valid Pokémon IDs per difficulty. Gen 1 = 151 starters and friends;
+// "all" goes through Gen 9 (1025 as of late 2024). The difficulty toggle picks
+// between these two ranges.
 const GEN_1_MAX_ID = 151;
+const ALL_GENS_MAX_ID = 1025;
 // Canonical list of all 18 Pokémon types. Used to populate the Pokédex
 // type-filter dropdown without hard-coding 18 <option> tags in the HTML.
 const ALL_TYPES = [
@@ -349,11 +351,12 @@ function normalizeName(str) {
 }
 
 // ===== API =====
-// Pick a random Pokémon ID within Gen 1 (1–151 inclusive).
-// Math.random() returns a float in [0, 1), so multiplying by 151 and flooring
-// gives 0–150; adding 1 shifts to 1–151.
-function getRandomGen1Id() {
-  return Math.floor(Math.random() * GEN_1_MAX_ID) + 1;
+// Pick a random Pokémon ID respecting the current difficulty setting.
+// Math.random() returns a float in [0, 1); multiplying by `max` and flooring
+// gives 0..max-1; adding 1 shifts to 1..max.
+function getRandomPokemonId() {
+  const max = persistedState.difficulty === "all" ? ALL_GENS_MAX_ID : GEN_1_MAX_ID;
+  return Math.floor(Math.random() * max) + 1;
 }
 
 // Fetch a single Pokémon's data from PokéAPI. Throws if the network is down or
@@ -366,6 +369,22 @@ async function fetchPokemon(id) {
     throw new Error(`PokéAPI returned ${response.status} for id ${id}`);
   }
   return response.json();
+}
+
+// Pick a random ID and fetch it, retrying with new IDs on 404. The 1..1025
+// range can have small gaps in PokéAPI; rather than failing the whole load,
+// just roll again. Gives up after a few tries so a real outage still surfaces.
+async function fetchRandomPokemon() {
+  const MAX_ATTEMPTS = 4;
+  let lastError;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    try {
+      return await fetchPokemon(getRandomPokemonId());
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
 }
 
 // Pull the best-quality sprite URL from the API response. Official artwork is
@@ -545,7 +564,6 @@ function revealAnswer() {
 async function loadNewPokemon() {
   // Reset the stage so the previous Pokémon (or stale error) doesn't linger
   // while the next request is in flight.
-  loadingIndicator.hidden = false;
   errorIndicator.hidden = true;
   pokemonSprite.hidden = true;
   revealPanel.hidden = true;
@@ -553,9 +571,14 @@ async function loadNewPokemon() {
   // if the fetch fails or is slow.
   currentPokemon = null;
 
+  // Avoid loading-state flicker on fast networks: only show the indicator if
+  // the fetch is still in flight after 150ms. Cleared in `finally` either way.
+  const loadingTimer = setTimeout(() => {
+    loadingIndicator.hidden = false;
+  }, 150);
+
   try {
-    const id = getRandomGen1Id();
-    const pokemon = await fetchPokemon(id);
+    const pokemon = await fetchRandomPokemon();
     // Log the full response so we can inspect the JSON shape in DevTools.
     // Useful while learning the API; safe to remove later.
     console.log("Fetched Pokémon:", pokemon);
@@ -566,7 +589,9 @@ async function loadNewPokemon() {
     console.error("Failed to fetch Pokémon:", error);
     errorIndicator.hidden = false;
   } finally {
-    // Whether we succeeded or errored, the loading indicator should go away.
+    // Whether we succeeded or errored, hide the indicator and cancel the
+    // pending show so a fast response doesn't get a delayed "Loading…" flash.
+    clearTimeout(loadingTimer);
     loadingIndicator.hidden = true;
   }
 }
@@ -639,12 +664,36 @@ hintButton.addEventListener("click", () => {
 // Next: load a fresh random Pokémon for the next round.
 nextButton.addEventListener("click", loadNewPokemon);
 
+// ===== Difficulty toggle =====
+
+// Reflect the persisted difficulty into the radio buttons on startup so
+// returning users see the setting they left.
+function applyDifficultyToUI() {
+  const radio = document.querySelector(
+    `input[name="difficulty"][value="${persistedState.difficulty}"]`,
+  );
+  if (radio) radio.checked = true;
+}
+
+// When the user changes difficulty, persist the choice and immediately load
+// a fresh Pokémon from the new range — otherwise the change feels like a
+// no-op until the next Skip/Next.
+const difficultyRadios = document.querySelectorAll('input[name="difficulty"]');
+for (const radio of difficultyRadios) {
+  radio.addEventListener("change", (event) => {
+    persistedState.difficulty = event.target.value;
+    savePersistedState();
+    loadNewPokemon();
+  });
+}
+
 // ===== Startup =====
 console.log("Who's That Pokémon? — script.js loaded.");
 // Pull saved progress from localStorage and reflect it in the score bar
 // before the first fetch lands, so returning users see their stats immediately.
 loadPersistedState();
 updateScoreBar();
+applyDifficultyToUI();
 // Build the type-filter dropdown once so it's ready when the user opens the
 // Pokédex view. The grid itself renders on first tab switch.
 populateTypeFilter();

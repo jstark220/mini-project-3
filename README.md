@@ -1,24 +1,16 @@
 # Who's That Pokémon?
 
-A browser-based Pokémon guessing game with a personal Pokédex that grows as you correctly identify silhouettes. Built for OIM3690 Mini Project 3 at Babson College.
+A browser-based Pokémon guessing game with a personal Pokédex that grows as you correctly identify silhouettes. 
 
-## Live demo
+## Live Link
 
-_Coming soon — will be deployed to GitHub Pages._
 
-## Stack
-
-Vanilla HTML, CSS, and JavaScript. No frameworks, no build step. Static files served directly from GitHub Pages.
 
 ## API
 
 [PokéAPI](https://pokeapi.co/) — no API key required.
 
-## Running locally
 
-Open `index.html` in any modern browser. There is no build or install step.
+## What I learned Working with APIs
 
-## Documentation
-
-- [PROPOSAL.md](PROPOSAL.md) — assignment proposal
-- [PRD.md](PRD.md) — full product requirements doc
+API's bridge the data gap when making any kind of tool or game. Scraping or hard coding all of the Pokemon would be impossible (or very tedious), but the API made this a fairly simple project. It is also amazing how many people can benefit from a free and public API like this one.

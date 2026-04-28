@@ -164,6 +164,20 @@ main {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 14px;
+  /* Plays each time the element becomes visible (i.e., every reveal),
+     giving the panel a small fade-up entry. */
+  animation: panel-in 320ms ease;
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .reveal-name {

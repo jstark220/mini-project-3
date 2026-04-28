@@ -46,8 +46,9 @@
 
       <!-- Silhouette display area. The image is hidden behind a CSS filter until correct guess. -->
       <div class="silhouette-stage">
-        <!-- Loading spinner shown while fetching. Hidden by default; JS toggles .is-visible. -->
-        <div id="loading-indicator" class="loading-indicator" aria-live="polite">Loading…</div>
+        <!-- Loading message. Starts hidden — JS only shows it if a fetch
+             is still in flight after 150ms, so fast loads don't flicker. -->
+        <div id="loading-indicator" class="loading-indicator" aria-live="polite" hidden>Loading…</div>
         <!-- Error state: friendly message + retry. Hidden by default. -->
         <div id="error-indicator" class="error-indicator" role="alert" hidden>
           <p>Couldn't reach PokéAPI. Check your connection.</p>
